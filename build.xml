@@ -13,11 +13,6 @@
   <property name="swt.libs.x64" location="${java.libs.dir}/swt-x64" />
   <property name="swt.libs.x86" location="${java.libs.dir}/swt-x86" />
 
-  <path id="classpath">
-    <fileset dir="sqlite.driver" includes="**/*.jar" />
-    <fileset dir="swt.libs.x64" includes="**/*.jar" />
-  </path>
-
   <target name="init" description="Crea los directorios necesarios.">
     <delete dir="${dist}" />
     <mkdir dir="${dist}" />
@@ -35,13 +30,13 @@
       <attribute name="Created-By" value="Lian Castellon - liancg@gmail.com" />
       <attribute name="Main-Class" value="com.liancg.phoneguide.App" />
       <attribute name="Class-Path" value="libs/sqlite-jdbc-3.7.2.jar libs/org.eclipse.equinox.common_3.6.0.v20110523.jar libs/org.eclipse.jface_3.7.0.v20110928-1505.jar libs/org.eclipse.swt.gtk.linux.x86_64_3.7.2.v3740f.jar" />
+<!--      <attribute name="Class-Path" value="libs/sqlite-jdbc-3.7.2.jar libs/org.eclipse.equinox.common_3.6.0.v20110523.jar libs/org.eclipse.jface_3.7.0.I20110522-1430.jar libs/org.eclipse.swt.gtk.linux.x86_3.7.1.v3738a.jar" /> -->
     </manifest>
 
     <jar destfile="${dist}/app.jar" manifest="${dist}/Manifest.MF" >
       <fileset dir="bin" />
     </jar>
     
-    <delete file="${dist}/MANIFEST.MF" failonerror="true" deleteonexit="true"/>
-    
+    <delete file="${dist}/MANIFEST.MF" />    
   </target>
 </project>
