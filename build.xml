@@ -24,7 +24,16 @@
       <fileset dir="${swt.libs.x64}" includes="*.jar" />
     </copy>
 
-    <copy todir="${dist}" file="icon.png" />
+    <copy todir="${dist}">
+      <fileset file="phone-guide.sh" />
+      <fileset file="phone-guide.bat" />
+      <fileset file="icon.png" />      
+    </copy>
+    
+    <chmod perm="0755">
+      <fileset file="${dist}/phone-guide.sh" />
+      <fileset file="${dist}/phone-guide.bat" />
+    </chmod>
     
     <manifest file="${dist}/Manifest.MF">
       <attribute name="Created-By" value="Lian Castellon - liancg@gmail.com" />
