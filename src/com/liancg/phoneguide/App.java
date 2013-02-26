@@ -17,6 +17,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Cursor;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
@@ -132,6 +133,9 @@ public class App
     display = new Display();
     shell = new Shell( display);
     shell.setText( appTitle + " - (sin DB)");
+
+    Image image = new Image( display, "icon.png");
+    shell.setImage( image);
 
     createControls();
   }
