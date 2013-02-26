@@ -1,8 +1,8 @@
 package com.liancg.phoneguide;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
@@ -26,10 +26,10 @@ public class SearchPanel extends Composite
   private Label lblAddress;
   private Text txtAddress;
   private Button btnSearch;
-  protected Clickable clickable;
   private Combo cmbPhoneType;
   private Label lblPhoneType;
   private final Control[] allControls;
+  protected Runnable runnable;
 
   public SearchPanel( Composite parent)
   {
@@ -180,19 +180,15 @@ public class SearchPanel extends Composite
     btnSearch = new Button( this, SWT.BORDER);
     btnSearch.setText( "Buscar");
     btnSearch.setLayoutData( formData);
-    btnSearch.addSelectionListener( new SelectionListener(){
+    btnSearch.addSelectionListener( new SelectionAdapter()
+    {
       @Override
-      public void widgetSelected( SelectionEvent arg0)
+      public void widgetSelected( SelectionEvent event)
       {
-        if (clickable != null)
+        if (runnable != null)
         {
-          clickable.click();
+          runnable.run();
         }
-      }
-
-      @Override
-      public void widgetDefaultSelected( SelectionEvent arg0)
-      {
       }
     });
   }
@@ -219,9 +215,9 @@ public class SearchPanel extends Composite
     return result;
   }
 
-  public void setOnSearch( Clickable clickable)
+  public void setOnSearch( Runnable runnable)
   {
-    this.clickable = clickable;
+    this.runnable = runnable;
   }
 
   public Button getSearchButton()
@@ -229,12 +225,12 @@ public class SearchPanel extends Composite
     return btnSearch;
   }
 
-  public void disableControls()
+  public void disable()
   {
     enableControls( allControls, false);
   }
 
-  public void enableControls()
+  public void enable()
   {
     enableControls( allControls, true);
   }
