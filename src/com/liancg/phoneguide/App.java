@@ -9,12 +9,13 @@ import java.sql.Statement;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.prefs.Preferences;
 
 import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FormAttachment;
@@ -26,6 +27,7 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
@@ -34,10 +36,14 @@ import org.eclipse.swt.widgets.TableItem;
 
 public class App
 {
-  private static final String DB_PATH = "/media/Sistema/Archivos de programa/Base ETECSA 2012/bd/dirtelefonico.db3";
   private static final String APP_NAME = "Guía Telefónica";
+  private static final String APP_VERSION = "v0.1b";
+
   public static final int DEFAULT_WIDTH = 750;
   public static final int DEFAULT_HEIGHT = 500;
+
+  private String dbPath;
+  protected String appTitle;
 
   protected Display display;
   protected Shell shell;
@@ -48,6 +54,7 @@ public class App
   private Label lblStatus;
   protected SearchPanel panelSearch;
   protected List<String[]> searchResults;
+  private Preferences preferences;
 
   /**
    * @param args
@@ -59,17 +66,35 @@ public class App
 
   private void run()
   {
+    appTitle = APP_NAME + " " + APP_VERSION;
+
     initShell();
     centerInScreen();
 
-    File dbFile = new File( DB_PATH);
+    dbPath = getDBPath();
 
-    if (dbFile.exists())
+    if (dbPath != null)
     {
-      connectToDB( DB_PATH);
+      File dbFile = new File( dbPath);
+
+      if (dbFile.exists())
+      {
+        connectToDB( dbPath);
+      }
     }
 
     mainLoop();
+  }
+
+  private String getDBPath()
+  {
+    preferences = Preferences.userNodeForPackage( App.class);
+    return preferences.get( "db.path", null);
+  }
+
+  private void saveDBPath( String dbPath)
+  {
+    preferences.put( "db.path", dbPath);
   }
 
   protected void connectToDB( String filename)
@@ -85,7 +110,10 @@ public class App
 
       conn = DriverManager.getConnection( "jdbc:sqlite:" + filename);
 
-      shell.setText( APP_NAME + " - " + new File( filename).getName());
+      saveDBPath( filename);
+
+      shell.setText( appTitle + " - " + new File( filename).getName());
+      panelSearch.enable();
     }
     catch (SQLException ex)
     {
@@ -103,7 +131,7 @@ public class App
   {
     display = new Display();
     shell = new Shell( display);
-    shell.setText( APP_NAME + " - (sin DB)");
+    shell.setText( appTitle + " - (sin DB)");
 
     createControls();
   }
@@ -123,7 +151,7 @@ public class App
   private void buildMainMenu()
   {
     Menu menuBar = new Menu( shell, SWT.BAR);
-    shell.setMenuBar(menuBar);
+    shell.setMenuBar( menuBar);
 
     MenuItem fileItem = new MenuItem( menuBar, SWT.CASCADE);
     fileItem.setText( "Archivo");
@@ -131,25 +159,29 @@ public class App
     Menu fileMenu = buildFileMenu();
     fileItem.setMenu( fileMenu);
 
-    MenuItem editItem = new MenuItem( menuBar, SWT.CASCADE);
-    editItem.setText( "Ayuda");
+    MenuItem helpItem = new MenuItem( menuBar, SWT.CASCADE);
+    helpItem.setText( "Ayuda");
+
+    Menu helpMenu = buildHelpMenu();
+    helpItem.setMenu( helpMenu);
   }
 
+  @SuppressWarnings("unused")
   private Menu buildFileMenu()
   {
-    Menu result = new Menu(shell, SWT.DROP_DOWN);
+    Menu result = new Menu( shell, SWT.DROP_DOWN);
 
     MenuItem fileItem = new MenuItem( result, SWT.CASCADE);
     fileItem.setText( "Abrir BD...");
-    fileItem.addSelectionListener( new SelectionListener()
+    fileItem.addSelectionListener( new SelectionAdapter()
     {
       @Override
-      public void widgetSelected( SelectionEvent arg0)
+      public void widgetSelected( SelectionEvent event)
       {
         FileDialog dialog = new FileDialog( shell, SWT.OPEN);
         dialog.setText( "Seleccione la Base de Datos");
-        dialog.setFilterNames( new String[] {"BDs Sqlite", "Todos los Archivos"});
-        dialog.setFilterExtensions( new String[] {"*.db3;*.db;*.sqlite", "*.*"});
+        dialog.setFilterNames( new String[] {"BDs Sqlite", "Todos los Archivos" });
+        dialog.setFilterExtensions( new String[] {"*.db3;*.db;*.sqlite", "*.*" });
 
         String filename = dialog.open();
 
@@ -158,26 +190,39 @@ public class App
           connectToDB( filename);
         }
       }
-
-      @Override
-      public void widgetDefaultSelected( SelectionEvent arg0)
-      {
-      }
     });
+
+    new MenuItem( result, SWT.SEPARATOR);
 
     MenuItem exitItem = new MenuItem( result, SWT.CASCADE);
     exitItem.setText( "Salir");
-    exitItem.addSelectionListener( new SelectionListener()
+    exitItem.addSelectionListener( new SelectionAdapter()
     {
       @Override
-      public void widgetSelected( SelectionEvent arg0)
+      public void widgetSelected( SelectionEvent event)
       {
         System.exit( 0);
       }
+    });
 
+    return result;
+  }
+
+  private Menu buildHelpMenu()
+  {
+    Menu result = new Menu( shell, SWT.DROP_DOWN);
+
+    MenuItem aboutItem = new MenuItem( result, SWT.CASCADE);
+    aboutItem.setText( "Acerca de...");
+    aboutItem.addSelectionListener( new SelectionAdapter()
+    {
       @Override
-      public void widgetDefaultSelected( SelectionEvent arg0)
+      public void widgetSelected( SelectionEvent event)
       {
+        MessageBox dialog = new MessageBox( shell, SWT.OK);
+        dialog.setMessage( appTitle + "\n(C) Copyright Lian Castellón, 2013");
+
+        dialog.open();
       }
     });
 
@@ -204,14 +249,15 @@ public class App
 
     panelSearch = new SearchPanel( searchGroup);
     panelSearch.setLayoutData( formData);
-    panelSearch.setOnSearch( new Clickable()
+    panelSearch.setOnSearch( new Runnable()
     {
       @Override
-      public void click()
+      public void run()
       {
         doSearch( panelSearch);
       }
     });
+    panelSearch.disable();
 
     shell.setDefaultButton( panelSearch.getSearchButton());
   }
@@ -227,7 +273,7 @@ public class App
       public void run()
       {
         setStatus( "Buscando...");
-        panelSearch.disableControls();
+        panelSearch.disable();
 
         display.update();
       }
@@ -244,7 +290,7 @@ public class App
     }
 
     setRecordCount( searchResults.size());
-    panelSearch.enableControls();
+    panelSearch.enable();
 
     shell.setCursor( cursor);
   }
@@ -380,7 +426,7 @@ public class App
         phoneNumberField = "Número";
         nameField = "Centro Atención";
         lastName1Field = "Cód Mercad";
-        lastName2Field = "USUARIO_TELEFONO";
+        lastName2Field = "Cód Mercad";
         addressField = "Dirección";
         break;
 
@@ -410,7 +456,7 @@ public class App
         result += " AND ";
       }
 
-      result += MessageFormat.format( "\"{0}\" like '%{1}%' ", lastName1Field, data.lastName1);
+      result += MessageFormat.format( "\"{0}\" like ''%{1}%'' ", lastName1Field, data.lastName1);
     }
 
     if (!data.lastName2.isEmpty())
@@ -420,7 +466,7 @@ public class App
         result += " AND ";
       }
 
-      result += MessageFormat.format( "\"{0}\" like '%{1}%' ", lastName2Field, data.lastName2);
+      result += MessageFormat.format( "\"{0}\" like ''%{1}%'' ", lastName2Field, data.lastName2);
     }
 
     if (!data.address.isEmpty())
@@ -539,9 +585,8 @@ public class App
     try
     {
       /*
-      String centroFact = resultSet.getString( 1);
-      String sector = resultSet.getString( 2);
-    */
+       * String centroFact = resultSet.getString( 1); String sector = resultSet.getString( 2);
+       */
 
       String phone = resultSet.getString( 3);
 
@@ -550,22 +595,18 @@ public class App
       String lastName2 = resultSet.getString( 6);
       String address = resultSet.getString( 7);
 
-  /*
-      String insc = resultSet.getString( 8);
-      String insn = resultSet.getString( 9);
-      String insk = resultSet.getString( 10);
-      String etc1 = resultSet.getString( 11);
-      String etc2 = resultSet.getString( 12);
-      String reparto = resultSet.getString( 13);
-  */
+      /*
+       * String insc = resultSet.getString( 8); String insn = resultSet.getString( 9); String insk = resultSet.getString( 10); String etc1 =
+       * resultSet.getString( 11); String etc2 = resultSet.getString( 12); String reparto = resultSet.getString( 13);
+       */
 
       String location = resultSet.getString( 14);
 
-      /*String ti = resultSet.getString( 15);*/
+      /* String ti = resultSet.getString( 15); */
 
       String fullName = getFullName( name, lastName1, lastName2);
 
-      result = new String[] {phone, fullName, address, location};
+      result = new String[] {phone, fullName, address, location };
     }
     catch (SQLException ex)
     {
@@ -584,29 +625,26 @@ public class App
     {
       String phone = resultSet.getString( 1).substring( 0, 10);
 
-     /* String imsi = resultSet.getString( 2);
-      String numberType = resultSet.getString( 3);*/
+      /*
+       * String imsi = resultSet.getString( 2); String numberType = resultSet.getString( 3);
+       */
 
       String name = resultSet.getString( 4);
 
-      //String idNumber = resultSet.getString( 5);
+      // String idNumber = resultSet.getString( 5);
 
       String address = resultSet.getString( 6);
 
-      /*String nationality = resultSet.getString( 7);
-      String authPerson = resultSet.getString( 8);
-      String authPersonAddress = resultSet.getString( 9);
-      String activationDate = resultSet.getString( 10);
-      String client = resultSet.getString( 11);
-      String clientName = resultSet.getString( 12);
-      String clasification = resultSet.getString( 13);
-      String clientClasification = resultSet.getString( 14);
-      String contract = resultSet.getString( 15);
-      String contractName = resultSet.getString( 16);*/
+      /*
+       * String nationality = resultSet.getString( 7); String authPerson = resultSet.getString( 8); String authPersonAddress =
+       * resultSet.getString( 9); String activationDate = resultSet.getString( 10); String client = resultSet.getString( 11); String
+       * clientName = resultSet.getString( 12); String clasification = resultSet.getString( 13); String clientClasification =
+       * resultSet.getString( 14); String contract = resultSet.getString( 15); String contractName = resultSet.getString( 16);
+       */
 
       String province = resultSet.getString( 17);
 
-      result = new String[]{phone, name, address, province};
+      result = new String[] {phone, name, address, province };
     }
     catch (SQLException ex)
     {
@@ -626,29 +664,20 @@ public class App
       String phoneNumber = resultSet.getString( 1);
       String address = resultSet.getString( 2);
       String municipe = resultSet.getString( 3);
-   /*   String locality = resultSet.getString( 4);
-      String repart = resultSet.getString( 5);
-      String localization = resultSet.getString( 6);*/
+      /*
+       * String locality = resultSet.getString( 4); String repart = resultSet.getString( 5); String localization = resultSet.getString( 6);
+       */
       String attentionCenter = resultSet.getString( 7);
-     /* String ura = resultSet.getString( 8);
-      String zone = resultSet.getString( 9);
-      String lock = resultSet.getString( 10);
-      String inventary = resultSet.getString( 11);
-      String popularCounsel = resultSet.getString( 12);
-      String organism = resultSet.getString( 13);
-      String owner = resultSet.getString( 14);
-      String ownerId = resultSet.getString( 15);
-      String circunscription = resultSet.getString( 16);
-      String clientCategory = resultSet.getString( 17);
-      String serviceType = resultSet.getString( 17);
-      String sector = resultSet.getString( 17);
-      String marketingCode = resultSet.getString( 17);
-      String category = resultSet.getString( 17);
-      String support = resultSet.getString( 17);
-      String entity = resultSet.getString( 17);
-      String socialMotivation = resultSet.getString( 17);*/
+      /*
+       * String ura = resultSet.getString( 8); String zone = resultSet.getString( 9); String lock = resultSet.getString( 10); String
+       * inventary = resultSet.getString( 11); String popularCounsel = resultSet.getString( 12); String organism = resultSet.getString( 13);
+       * String owner = resultSet.getString( 14); String ownerId = resultSet.getString( 15); String circunscription = resultSet.getString(
+       * 16); String clientCategory = resultSet.getString( 17); String serviceType = resultSet.getString( 17); String sector =
+       * resultSet.getString( 17); String marketingCode = resultSet.getString( 17); String category = resultSet.getString( 17); String
+       * support = resultSet.getString( 17); String entity = resultSet.getString( 17); String socialMotivation = resultSet.getString( 17);
+       */
 
-      result = new String[]{phoneNumber, attentionCenter, address, municipe};
+      result = new String[] {phoneNumber, attentionCenter, address, municipe };
     }
     catch (SQLException ex)
     {
