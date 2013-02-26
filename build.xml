@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="PhoneGuide" default="dist">
+  <description>
+    Targets de la PhoneGuide.
+  </description>
+
+  <condition property="java.libs.dir" value="C:/Archivos de Programa/Java/" else="/usr/local/share/java">
+    <available file="C:/" type="dir" />
+  </condition>
+  
+  <property name="dist" location="dist" />
+  <property name="sqlite.driver" location="${java.libs.dir}/Database Connectors/sqlite/xerial" />
+  <property name="swt.libs.x64" location="${java.libs.dir}/swt-x64" />
+  <property name="swt.libs.x86" location="${java.libs.dir}/swt-x86" />
+
+  <path id="classpath">
+    <fileset dir="sqlite.driver" includes="**/*.jar" />
+    <fileset dir="swt.libs.x64" includes="**/*.jar" />
+  </path>
+
+  <target name="init" description="Crea los directorios necesarios.">
+    <delete dir="${dist}" />
+    <mkdir dir="${dist}" />
+  </target>
+
+  <target name="dist" description="Crea los directorios necesarios." depends="init">
+    <copy todir="${dist}/libs">
+      <fileset dir="${sqlite.driver}" includes="*.jar" />
+      <fileset dir="${swt.libs.x64}" includes="*.jar" />
+    </copy>
+
+    <copy todir="${dist}" file="icon.png" />
+    
+    <manifest file="${dist}/Manifest.MF">
+      <attribute name="Created-By" value="Lian Castellon - liancg@gmail.com" />
+      <attribute name="Main-Class" value="com.liancg.phoneguide.App" />
+      <attribute name="Class-Path" value="libs/sqlite-jdbc-3.7.2.jar libs/org.eclipse.equinox.common_3.6.0.v20110523.jar libs/org.eclipse.jface_3.7.0.v20110928-1505.jar libs/org.eclipse.swt.gtk.linux.x86_64_3.7.2.v3740f.jar" />
+    </manifest>
+
+    <jar destfile="${dist}/app.jar" manifest="${dist}/Manifest.MF" >
+      <fileset dir="bin" />
+    </jar>
+    
+    <delete file="${dist}/MANIFEST.MF" failonerror="true" deleteonexit="true"/>
+    
+  </target>
+</project>
